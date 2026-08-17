@@ -1,10 +1,10 @@
-**# Project Technical Overview**
+# Project Technical Overview
 
-**## 1. About Project**
+## 1. About Project
 
-This project develops a lightweight convolutional neural network (CNN) for ****MIMO-OTFS channel estimation in the delay-Doppler (DD) domain****.
+This project develops a lightweight convolutional neural network (CNN) for **MIMO-OTFS channel estimation in the delay-Doppler (DD) domain**.
 
-The goal is to recover the complex DD-domain channel response from a small set of pilot observations while exploiting the fact that wireless channels are typically ****sparse in delay and Doppler****.
+The goal is to recover the complex DD-domain channel response from a small set of pilot observations while exploiting the fact that wireless channels are typically **sparse in delay and Doppler**.
 
 The overall pipeline is:
 
@@ -53,15 +53,15 @@ The implemented configuration is:
 
 ---
 
-**## 2. DD Domain**
+## 2. DD Domain
 
 OTFS represents the wireless channel in the delay-Doppler domain rather than directly in the time-frequency domain.
 
 For a MIMO system with $N_t$ transmit antennas, the channel can be represented as
 
-```math
+$$
 H[m,n,t],
-```
+$$
 
 where:
 
@@ -71,21 +71,21 @@ where:
 
 For this project,
 
-```math
+$$
 H \in \mathbb{C}^{M\times N\times N_t}
 =
 \mathbb{C}^{256\times 8\times 16}.
-```
+$$
 
 A useful property of this representation is that practical wireless channels tend to have only a relatively small number of significant delay-Doppler coefficients. The estimator therefore does not need to reconstruct an arbitrary dense tensor; it can exploit the structure and sparsity of the channel.
 
 ---
 
-**# 3. MATLAB: channel and dataset generation**
+# 3. MATLAB: channel and dataset generation
 
 The MATLAB scripts generate the data used by the neural network.
 
-**## 3.1 MIMO channel model**
+## 3.1 MIMO channel model
 
 The simulation uses an NR CDL-D channel with:
 
@@ -97,96 +97,96 @@ The simulation uses an NR CDL-D channel with:
 
 The maximum Doppler shift is obtained from the carrier frequency and velocity,
 
-```math
+$$
 f_D = \frac{v f_c}{c},
-```
+$$
 
 where $v$ is the terminal velocity, $f_c$ is the carrier frequency, and $c$ is the speed of light.
 
 The OTFS parameters are:
 
-```math
+$$
 M=256,\qquad N=8,
-```
+$$
 
 with
 
-```math
+$$
 \Delta f = 15\text{ kHz}
-```
+$$
 
 and an FFT size of 1024.
 
 ---
 
-**## 3.2 Pilot configuration**
+## 3.2 Pilot configuration
 
 A 25% pilot overhead is used.
 
 The number of DD-domain pilot positions is therefore
 
-```math
+$$
 P = 0.25MN
   = 0.25(256)(8)
   = 512.
-```
+$$
 
 The pilot locations are generated using a fixed random seed so that the measurement configuration is reproducible.
 
 Complex Gaussian pilot symbols are also generated once and reused:
 
-```math
+$$
 x_p \sim \mathcal{CN}(0,1).
-```
+$$
 
 The fixed pilot pattern means that different channel realizations are observed using the same measurement configuration.
 
 ---
 
-**## 3.3 OTFS modulation and channel probing**
+## 3.3 OTFS modulation and channel probing
 
 For each transmit antenna and pilot location, the MATLAB code creates a unit DD-domain response and passes it through the OTFS modulation/channel/demodulation process.
 
 This is used to construct a sensing matrix
 
-```math
+$$
 \Phi.
-```
+$$
 
 For the implemented configuration,
 
-```math
+$$
 \Phi \in
 \mathbb{C}^{MN\times PN_t}
 =
 \mathbb{C}^{2048\times8192}.
-```
+$$
 
 Each column of $\Phi$ represents the DD-domain response associated with a particular pilot and transmit antenna.
 
 Conceptually,
 
-```math
+$$
 \Phi =
 \begin{bmatrix}
 \phi_{1,1} & \cdots & \phi_{1,P} &
 \phi_{2,1} & \cdots & \phi_{N_t,P}
 \end{bmatrix}.
-```
+$$
 
 The MATLAB script saves $\Phi$, the pilot locations, pilot symbols, and padding information so that the Python pipeline can reproduce the same measurement model.
 
 ---
 
-**## 3.4 Channel ground truth**
+## 3.4 Channel ground truth
 
 For every channel realization, the MATLAB code probes the channel separately for each transmit antenna and obtains
 
-```math
+$$
 H_{\mathrm{ADD}}
 \in
 \mathbb{C}^{M\times N\times N_t}.
-```
+$$
 
 The channel is generated in the DD domain using an OTFS pilot waveform, passed through the CDL channel, aligned using the calculated delay padding, and then demodulated back into the DD domain.
 
@@ -194,19 +194,19 @@ Weak channel coefficients are removed using a power threshold relative to the ma
 
 ---
 
-**# 4. Measurement model**
+# 4. Measurement model
 
 The Python training pipeline uses the complex received DD-domain observation $y$ and the sensing matrix $\Phi$.
 
 The measurement model is
 
-```math
+$$
 \mathbf{y}
 =
 \Phi\mathbf{h}
 \+
 \mathbf{w},
-```
+$$
 
 where:
 
@@ -219,69 +219,69 @@ For the training dataset, the observation SNR is 10 dB.
 
 The Python code then forms a matched-filter / correlation-style feature:
 
-```math
+$$
 \mathbf{z}
 =
 \Phi^{H}\mathbf{y}.
-```
+$$
 
 This produces a vector containing the correlation of the received observation with the sensing responses associated with the pilots.
 
 ---
 
-**# 5. CNN input**
+# 5. CNN input
 
 Only the pilot positions are directly observed.
 
 The vector
 
-```math
+$$
 \mathbf{z}=\Phi^H\mathbf{y}
-```
+$$
 
 is therefore scattered back onto the corresponding positions of the DD grid.
 
 For each transmit antenna, this gives a sparse
 
-```math
+$$
 M\times N
-```
+$$
 
 feature map.
 
 The resulting complex feature tensor has dimensions
 
-```math
+$$
 N_t\times M\times N.
-```
+$$
 
 Because the CNN operates on real-valued tensors, the complex input is separated into real and imaginary components:
 
-```math
+$$
 X =
 \left[
-\Re\\{Z\\};
-\Im\\{Z\\}
+\Re\{Z\};
+\Im\{Z\}
 \right].
-```
+$$
 
 Thus the CNN input has
 
-```math
+$$
 2N_t = 32
-```
+$$
 
 channels and dimensions
 
-```math
+$$
 32\times256\times8.
-```
+$$
 
 The same real/imaginary representation is used for the target channel.
 
 ---
 
-**# 6. Lightweight CNN architecture**
+# 6. Lightweight CNN architecture
 
 The estimator is a fully convolutional residual CNN.
 
@@ -317,22 +317,22 @@ Output
 
 Each residual block contains two $3\times3$ convolutions with batch normalization and ReLU activation, followed by an identity skip connection:
 
-```math
+$$
 \mathbf{x}_{out}
 =
 \operatorname{ReLU}
 \left(
 F(\mathbf{x})+\mathbf{x}
 \right).
-```
+$$
 
 The network does not use fully connected layers. Consequently, the spatial DD dimensions are preserved throughout the network.
 
 The final 32 channels correspond to
 
-```math
+$$
 2N_t = 32
-```
+$$
 
 real-valued channels:
 
@@ -341,25 +341,25 @@ real-valued channels:
 
 These are recombined to form
 
-```math
+$$
 \hat{H}
 =
 \hat{H}_{\mathrm{Re}}
 \+
 j\hat{H}_{\mathrm{Im}}.
-```
+$$
 
-The network contains ****277,664 trainable parameters****.
+The network contains **277,664 trainable parameters**.
 
 ---
 
-**# 7. Training objective**
+# 7. Training objective
 
 The network is trained with a weighted complex-domain reconstruction loss.
 
 The target magnitude is first aggregated across transmit antennas:
 
-```math
+$$
 |H[m,n]|
 =
 \sqrt{
@@ -369,62 +369,62 @@ H_{\mathrm{Re}}[m,n,t]^2+
 H_{\mathrm{Im}}[m,n,t]^2
 \right)
 }.
-```
+$$
 
 A threshold is then calculated for each sample:
 
-```math
+$$
 \tau
 =
 \alpha
 \max_{m,n}|H[m,n]|.
-```
+$$
 
 Strong DD locations receive full weight while weak locations receive a reduced weight:
 
-```math
+$$
 w[m,n]=
 \begin{cases}
-1, & |H[m,n]|\geq\tau,\\\\
+1, & |H[m,n]|\geq\tau,\\
 \gamma, & |H[m,n]|<\tau.
 \end{cases}
-```
+$$
 
 This focuses the reconstruction loss on significant channel paths.
 
 ---
 
-**## 7.1 Soft thresholding**
+## 7.1 Soft thresholding
 
 Before the reconstruction MSE is calculated, the predicted complex coefficients undergo soft thresholding.
 
 For a predicted complex coefficient $z$,
 
-```math
+$$
 \mathcal{S}_{\tau}(z)
 =
 \max(|z|-\tau,0)
 \frac{z}{|z|+\epsilon}.
-```
+$$
 
 This encourages small predicted coefficients to shrink toward zero while retaining the phase of larger coefficients.
 
 ---
 
-**## 7.2 Weighted complex MSE**
+## 7.2 Weighted complex MSE
 
 The real and imaginary errors are combined as
 
-```math
+$$
 e =
 (\hat{H}_{\mathrm{Re}}-H_{\mathrm{Re}})^2
 \+
 (\hat{H}_{\mathrm{Im}}-H_{\mathrm{Im}})^2.
-```
+$$
 
 The weighted reconstruction term is approximately
 
-```math
+$$
 L_{\mathrm{MSE}}
 =
 \operatorname{mean}
@@ -432,45 +432,45 @@ L_{\mathrm{MSE}}
 w[m,n]
 \sum_t e[m,n,t]
 \right).
-```
+$$
 
 ---
 
-**## 7.3 Sparsity term**
+## 7.3 Sparsity term
 
 A masked L1 penalty is additionally applied to predicted energy at locations where the target is weak:
 
-```math
+$$
 L_1
 =
 \operatorname{mean}
 \left(
 |\hat{H}[m,n]|\,\mathbf{1}_{|H[m,n]|<\tau}
 \right).
-```
+$$
 
 The total training objective is
 
-```math
+$$
 L =
 L_{\mathrm{MSE}}
 \+
 \lambda L_1
-```
+$$
 
 with the implemented training configuration using:
 
-```math
+$$
 \alpha=0.05,\qquad
 \gamma=0.05,\qquad
 \lambda=10^{-2},
-```
+$$
 
 and a soft-threshold ratio of 0.01.
 
 ---
 
-**# 8. Training**
+# 8. Training
 
 The model is trained using Adam with:
 
@@ -485,21 +485,21 @@ The model is trained using Adam with:
 | Learning rate | $10^{-3}$ |
 | Optimizer | Adam |
 
-The cleaned repository uses a ****single deterministic train/validation split**** so that the two sets are guaranteed to be disjoint.
+The cleaned repository uses a **single deterministic train/validation split** so that the two sets are guaranteed to be disjoint.
 
 ---
 
-**# 9. Evaluation**
+# 9. Evaluation
 
 The model produces a complex channel estimate
 
-```math
+$$
 \hat{H}\in\mathbb{C}^{256\times8\times16}.
-```
+$$
 
 Performance is measured using normalized mean squared error:
 
-```math
+$$
 \mathrm{NMSE}
 =
 \frac{
@@ -507,27 +507,27 @@ Performance is measured using normalized mean squared error:
 }{
 \|H\|_2^2
 }.
-```
+$$
 
 The value is reported in decibels:
 
-```math
+$$
 \mathrm{NMSE}_{dB}
 =
 10\log_{10}(\mathrm{NMSE}).
-```
+$$
 
 The project also evaluates a per-antenna hard-thresholding operation. Predicted coefficients below a fraction of the maximum predicted magnitude are set to zero, allowing the estimator to produce a sparse channel representation.
 
 ---
 
-**# 10. SNR generalization**
+# 10. SNR generalization
 
 After training at 10 dB, the same network is evaluated on independently generated datasets at:
 
-```math
+$$
 5,\ 10,\ 15,\ 20\text{ dB}.
-```
+$$
 
 This tests whether the learned channel estimator remains effective when the observation SNR differs from the training condition.
 
@@ -542,41 +542,41 @@ The current experimental results are approximately:
 
 ---
 
-**# 11. Computational characteristics**
+# 11. Computational characteristics
 
 The estimator is intentionally small compared with large image-processing CNNs.
 
 The network has:
 
-```math
+$$
 277,664
-```
+$$
 
 trainable parameters and uses only convolutional operations.
 
-On the NVIDIA Tesla P100 used in the original experiment, the CNN forward-pass latency was approximately ****1.5 ms****.
+On the NVIDIA Tesla P100 used in the original experiment, the CNN forward-pass latency was approximately **1.5 ms**.
 
-The implementation also contains an optimized GPU preprocessing path that can perform the feature/scattering operation before CNN inference, enabling an approximately ****2.3 ms end-to-end GPU pipeline**** in the benchmark environment.
+The implementation also contains an optimized GPU preprocessing path that can perform the feature/scattering operation before CNN inference, enabling an approximately **2.3 ms end-to-end GPU pipeline** in the benchmark environment.
 
 These latency values are hardware-dependent and should therefore be treated as reference measurements rather than universal inference times.
 
 ---
 
-**# 12. Repository workflow**
+# 12. Repository workflow
 
 The repository separates the project into three main stages.
 
-**### MATLAB**
+### MATLAB
 
 ```text
 matlab/
-    generate\\_dataset.m
-    generate\\_dataset\\_varying\\_snr.m
+    generate\_dataset.m
+    generate\_dataset\_varying\_snr.m
 ```
 
 These scripts generate the OTFS/MIMO channel realizations, sensing matrix, pilot observations, and datasets.
 
-**### Python training**
+### Python training
 
 ```text
 src/
@@ -588,12 +588,12 @@ src/
 
 These files load the generated data, construct $\Phi^H y$, form the CNN input, train the residual CNN, and save the best checkpoint.
 
-**### Python evaluation**
+### Python evaluation
 
 ```text
 src/
     evaluate.py
-    evaluate\\_snr.py
+    evaluate\_snr.py
     benchmark.py
 ```
 
@@ -601,19 +601,19 @@ These scripts evaluate NMSE, sparsity after thresholding, performance across SNR
 
 ---
 
-**# 13. Reproducibility note**
+# 13. Reproducibility note
 
-The repository currently uses the ****256 × 8 DD-grid, 16-transmit-antenna, 40,000-sample configuration**** represented by the implementation.
+The repository currently uses the **256 × 8 DD-grid, 16-transmit-antenna, 40,000-sample configuration** represented by the implementation.
 
 
 
 ---
 
-**## 14. Key equation**
+## 14. Key equation
 
 At a high level, the entire estimator can be viewed as learning
 
-```math
+$$
 \hat{H}
 =
 f_{\theta}
@@ -626,14 +626,14 @@ f_{\theta}
 \right)
 \right)
 \right),
-```
+$$
 
 where:
 
 \- $\Phi h+w$ represents the noisy pilot observation,
 \- $\Phi^H y$ produces correlation-based pilot features,
-\- \\`Scatter\\` places those features on the DD grid,
+\- \`Scatter\` places those features on the DD grid,
 \- $f_\theta(\cdot)$ is the lightweight residual CNN,
 \- $\hat H$ is the estimated MIMO DD-domain channel.
 
-The CNN therefore learns to infer the ****full sparse DD-domain channel from partial, noisy pilot-derived observations****.
+The CNN therefore learns to infer the **full sparse DD-domain channel from partial, noisy pilot-derived observations**.

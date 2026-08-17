@@ -295,7 +295,7 @@ Output
 Each residual block contains two $3\times3$ convolutions with batch normalization and ReLU activation, followed by an identity skip connection:
 
 $$
-\mathbf{x}_{out} = \operatorname{ReLU} \left( F(\mathbf{x})+\mathbf{x} \right).
+\mathbf{x}_{out} = \mathrm{ReLU} \left( F(\mathbf{x})+\mathbf{x} \right).
 $$
 
 The network does not use fully connected layers. Consequently, the spatial DD dimensions are preserved throughout the network.
@@ -372,7 +372,7 @@ $$
 The weighted reconstruction term is approximately
 
 $$
-L_{\mathrm{MSE}} = \operatorname{mean} \left( w[m,n] \sum_t e[m,n,t] \right).
+L_{\mathrm{MSE}} = \mathrm{mean} \left( w[m,n] \sum_t e[m,n,t] \right).
 $$
 
 ---
@@ -382,7 +382,7 @@ $$
 A masked L1 penalty is additionally applied to predicted energy at locations where the target is weak:
 
 $$
-L_1 = \operatorname{mean} \left( |\hat{H}[m,n]|\,\mathbf{1}_{|H[m,n]|<\tau} \right).
+L_1 = \mathrm{mean} \left( |\hat{H}[m,n]|\,\mathbf{1}_{|H[m,n]|<\tau} \right).
 $$
 
 The total training objective is
@@ -535,7 +535,7 @@ The repository currently uses the **256 × 8 DD-grid, 16-transmit-antenna, 40,00
 At a high level, the entire estimator can be viewed as learning
 
 $$
-\hat{H} = f_{\theta} \left( \operatorname{Scatter} \left( \Phi^H \left( \Phi h+w \right) \right) \right),
+\hat{H} = f_{\theta} \left( \mathrm{Scatter} \left( \Phi^H \left( \Phi h+w \right) \right) \right),
 $$
 
 where:

@@ -10,30 +10,30 @@ The overall pipeline is:
 
 ```text
 OTFS / MIMO channel simulation in MATLAB
-              |
-              v
-       Generate pilot observations
-              |
-              v
-       Construct sensing matrix Phi
-              |
-              v
-       Generate noisy received DD signal y
-              |
-              v
-             Phi^H y
-              |
-              v
-   Scatter pilot features onto DD grid
-              |
-              v
-      Real/imaginary channels
-              |
-              v
-       Lightweight residual CNN
-              |
-              v
-     Estimated complex DD channel
+              |
+              v
+       Generate pilot observations
+              |
+              v
+       Construct sensing matrix Phi
+              |
+              v
+       Generate noisy received DD signal y
+              |
+              v
+             Phi^H y
+              |
+              v
+   Scatter pilot features onto DD grid
+              |
+              v
+      Real/imaginary channels
+              |
+              v
+       Lightweight residual CNN
+              |
+              v
+     Estimated complex DD channel
 ```
 
 The implemented configuration is:
@@ -57,17 +57,17 @@ The implemented configuration is:
 
 OTFS represents the wireless channel in the delay-Doppler domain rather than directly in the time-frequency domain.
 
-For a MIMO system with \(N_t\) transmit antennas, the channel can be represented as
+For a MIMO system with $N_t$ transmit antennas, the channel can be represented as
 
-\[
+$$
 H[m,n,t],
-\]
+$$
 
 where:
 
-- \(m\) is the delay-bin index,
-- \(n\) is the Doppler-bin index,
-- \(t\) is the transmit-antenna index.
+\- $m$ is the delay-bin index,
+\- $n$ is the Doppler-bin index,
+\- $t$ is the transmit-antenna index.
 
 For this project,
 
@@ -89,11 +89,11 @@ The MATLAB scripts generate the data used by the neural network.
 
 The simulation uses an NR CDL-D channel with:
 
-- carrier frequency: 2.15 GHz,
-- velocity: 360 km/h,
-- 16 transmit antennas,
-- 1 receive antenna,
-- a 4 × 4 transmit uniform rectangular array.
+\- carrier frequency: 2.15 GHz,
+\- velocity: 360 km/h,
+\- 16 transmit antennas,
+\- 1 receive antenna,
+\- a 4 × 4 transmit uniform rectangular array.
 
 The maximum Doppler shift is obtained from the carrier frequency and velocity,
 
@@ -101,7 +101,7 @@ $$
 f_D = \frac{v f_c}{c},
 $$
 
-where \(v\) is the terminal velocity, \(f_c\) is the carrier frequency, and \(c\) is the speed of light.
+where $v$ is the terminal velocity, $f_c$ is the carrier frequency, and $c$ is the speed of light.
 
 The OTFS parameters are:
 
@@ -127,8 +127,8 @@ The number of DD-domain pilot positions is therefore
 
 $$
 P = 0.25MN
-  = 0.25(256)(8)
-  = 512.
+  = 0.25(256)(8)
+  = 512.
 $$
 
 The pilot locations are generated using a fixed random seed so that the measurement configuration is reproducible.
@@ -162,7 +162,7 @@ $$
 \mathbb{C}^{2048\times8192}.
 $$
 
-Each column of \(\Phi\) represents the DD-domain response associated with a particular pilot and transmit antenna.
+Each column of $\Phi$ represents the DD-domain response associated with a particular pilot and transmit antenna.
 
 Conceptually,
 
@@ -174,7 +174,7 @@ $$
 \end{bmatrix}.
 $$
 
-The MATLAB script saves \(\Phi\), the pilot locations, pilot symbols, and padding information so that the Python pipeline can reproduce the same measurement model.
+The MATLAB script saves $\Phi$, the pilot locations, pilot symbols, and padding information so that the Python pipeline can reproduce the same measurement model.
 
 ---
 
@@ -196,7 +196,7 @@ Weak channel coefficients are removed using a power threshold relative to the ma
 
 # 4. Measurement model
 
-The Python training pipeline uses the complex received DD-domain observation \(y\) and the sensing matrix \(\Phi\).
+The Python training pipeline uses the complex received DD-domain observation $y$ and the sensing matrix $\Phi$.
 
 The measurement model is
 
@@ -204,16 +204,16 @@ $$
 \mathbf{y}
 =
 \Phi\mathbf{h}
-+
+\+
 \mathbf{w},
 $$
 
 where:
 
-- \(\mathbf{h}\) contains the channel coefficients corresponding to the pilot positions,
-- \(\mathbf{y}\) is the received DD-domain observation,
-- \(\Phi\) is the sensing matrix,
-- \(\mathbf{w}\) is complex AWGN.
+\- $\mathbf{h}$ contains the channel coefficients corresponding to the pilot positions,
+\- $\mathbf{y}$ is the received DD-domain observation,
+\- $\Phi$ is the sensing matrix,
+\- $\mathbf{w}$ is complex AWGN.
 
 For the training dataset, the observation SNR is 10 dB.
 
@@ -290,32 +290,32 @@ Its high-level structure is:
 ```text
 Input
 32 × 256 × 8
-      |
-      v
+      |
+      v
 3×3 Conv: 32 channels
-      |
-      v
+      |
+      v
 3×3 Conv: 64 channels
-      |
-      v
+      |
+      v
 Residual Block
-      |
+      |
 Residual Block
-      |
+      |
 Residual Block
-      |
-      v
+      |
+      v
 3×3 Conv: 32 channels
-      |
-      v
+      |
+      v
 3×3 Conv: 32 channels
-      |
-      v
+      |
+      v
 Output
 32 × 256 × 8
 ```
 
-Each residual block contains two \(3\times3\) convolutions with batch normalization and ReLU activation, followed by an identity skip connection:
+Each residual block contains two $3\times3$ convolutions with batch normalization and ReLU activation, followed by an identity skip connection:
 
 $$
 \mathbf{x}_{out}
@@ -336,8 +336,8 @@ $$
 
 real-valued channels:
 
-- 16 real-valued channel maps,
-- 16 imaginary-valued channel maps.
+\- 16 real-valued channel maps,
+\- 16 imaginary-valued channel maps.
 
 These are recombined to form
 
@@ -345,7 +345,7 @@ $$
 \hat{H}
 =
 \hat{H}_{\mathrm{Re}}
-+
+\+
 j\hat{H}_{\mathrm{Im}}.
 $$
 
@@ -398,7 +398,7 @@ This focuses the reconstruction loss on significant channel paths.
 
 Before the reconstruction MSE is calculated, the predicted complex coefficients undergo soft thresholding.
 
-For a predicted complex coefficient \(z\),
+For a predicted complex coefficient $z$,
 
 $$
 \mathcal{S}_{\tau}(z)
@@ -418,7 +418,7 @@ The real and imaginary errors are combined as
 $$
 e =
 (\hat{H}_{\mathrm{Re}}-H_{\mathrm{Re}})^2
-+
+\+
 (\hat{H}_{\mathrm{Im}}-H_{\mathrm{Im}})^2.
 $$
 
@@ -454,7 +454,7 @@ The total training objective is
 $$
 L =
 L_{\mathrm{MSE}}
-+
+\+
 \lambda L_1
 $$
 
@@ -482,7 +482,7 @@ The model is trained using Adam with:
 | SNR | 10 dB |
 | Epochs | 20 |
 | Batch size | 16 |
-| Learning rate | \(10^{-3}\) |
+| Learning rate | $10^{-3}$ |
 | Optimizer | Adam |
 
 The cleaned repository uses a **single deterministic train/validation split** so that the two sets are guaranteed to be disjoint.
@@ -570,8 +570,8 @@ The repository separates the project into three main stages.
 
 ```text
 matlab/
-    generate_dataset.m
-    generate_dataset_varying_snr.m
+    generate\_dataset.m
+    generate\_dataset\_varying\_snr.m
 ```
 
 These scripts generate the OTFS/MIMO channel realizations, sensing matrix, pilot observations, and datasets.
@@ -580,21 +580,21 @@ These scripts generate the OTFS/MIMO channel realizations, sensing matrix, pilot
 
 ```text
 src/
-    dataset.py
-    model.py
-    loss.py
-    train.py
+    dataset.py
+    model.py
+    loss.py
+    train.py
 ```
 
-These files load the generated data, construct \(\Phi^H y\), form the CNN input, train the residual CNN, and save the best checkpoint.
+These files load the generated data, construct $\Phi^H y$, form the CNN input, train the residual CNN, and save the best checkpoint.
 
 ### Python evaluation
 
 ```text
 src/
-    evaluate.py
-    evaluate_snr.py
-    benchmark.py
+    evaluate.py
+    evaluate\_snr.py
+    benchmark.py
 ```
 
 These scripts evaluate NMSE, sparsity after thresholding, performance across SNR, and inference latency.
@@ -630,10 +630,10 @@ $$
 
 where:
 
-- \(\Phi h+w\) represents the noisy pilot observation,
-- \(\Phi^H y\) produces correlation-based pilot features,
-- `Scatter` places those features on the DD grid,
-- \(f_\theta(\cdot)\) is the lightweight residual CNN,
-- \(\hat H\) is the estimated MIMO DD-domain channel.
+\- $\Phi h+w$ represents the noisy pilot observation,
+\- $\Phi^H y$ produces correlation-based pilot features,
+\- \`Scatter\` places those features on the DD grid,
+\- $f_\theta(\cdot)$ is the lightweight residual CNN,
+\- $\hat H$ is the estimated MIMO DD-domain channel.
 
 The CNN therefore learns to infer the **full sparse DD-domain channel from partial, noisy pilot-derived observations**.

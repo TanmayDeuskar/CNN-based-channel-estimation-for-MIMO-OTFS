@@ -72,9 +72,7 @@ where:
 For this project,
 
 $$
-H \in \mathbb{C}^{M\times N\times N_t}
-=
-\mathbb{C}^{256\times 8\times 16}.
+H \in \mathbb{C}^{M\times N\times N_t} = \mathbb{C}^{256\times 8\times 16}.
 $$
 
 A useful property of this representation is that practical wireless channels tend to have only a relatively small number of significant delay-Doppler coefficients. The estimator therefore does not need to reconstruct an arbitrary dense tensor; it can exploit the structure and sparsity of the channel.
@@ -126,9 +124,7 @@ A 25% pilot overhead is used.
 The number of DD-domain pilot positions is therefore
 
 $$
-P = 0.25MN
-  = 0.25(256)(8)
-  = 512.
+P = 0.25MN = 0.25(256)(8) = 512.
 $$
 
 The pilot locations are generated using a fixed random seed so that the measurement configuration is reproducible.
@@ -156,10 +152,7 @@ $$
 For the implemented configuration,
 
 $$
-\Phi \in
-\mathbb{C}^{MN\times PN_t}
-=
-\mathbb{C}^{2048\times8192}.
+\Phi \in \mathbb{C}^{MN\times PN_t} = \mathbb{C}^{2048\times8192}.
 $$
 
 Each column of $\Phi$ represents the DD-domain response associated with a particular pilot and transmit antenna.
@@ -167,11 +160,7 @@ Each column of $\Phi$ represents the DD-domain response associated with a partic
 Conceptually,
 
 $$
-\Phi =
-\begin{bmatrix}
-\phi_{1,1} & \cdots & \phi_{1,P} &
-\phi_{2,1} & \cdots & \phi_{N_t,P}
-\end{bmatrix}.
+\Phi = \begin{bmatrix} \phi_{1,1} & \cdots & \phi_{1,P} & \phi_{2,1} & \cdots & \phi_{N_t,P} \end{bmatrix}.
 $$
 
 The MATLAB script saves $\Phi$, the pilot locations, pilot symbols, and padding information so that the Python pipeline can reproduce the same measurement model.
@@ -183,9 +172,7 @@ The MATLAB script saves $\Phi$, the pilot locations, pilot symbols, and padding 
 For every channel realization, the MATLAB code probes the channel separately for each transmit antenna and obtains
 
 $$
-H_{\mathrm{ADD}}
-\in
-\mathbb{C}^{M\times N\times N_t}.
+H_{\mathrm{ADD}} \in \mathbb{C}^{M\times N\times N_t}.
 $$
 
 The channel is generated in the DD domain using an OTFS pilot waveform, passed through the CDL channel, aligned using the calculated delay padding, and then demodulated back into the DD domain.
@@ -201,11 +188,7 @@ The Python training pipeline uses the complex received DD-domain observation $y$
 The measurement model is
 
 $$
-\mathbf{y}
-=
-\Phi\mathbf{h}
-+
-\mathbf{w},
+\mathbf{y} = \Phi\mathbf{h} + \mathbf{w},
 $$
 
 where:
@@ -220,9 +203,7 @@ For the training dataset, the observation SNR is 10 dB.
 The Python code then forms a matched-filter / correlation-style feature:
 
 $$
-\mathbf{z}
-=
-\Phi^{H}\mathbf{y}.
+\mathbf{z} = \Phi^{H}\mathbf{y}.
 $$
 
 This produces a vector containing the correlation of the received observation with the sensing responses associated with the pilots.
@@ -258,11 +239,7 @@ $$
 Because the CNN operates on real-valued tensors, the complex input is separated into real and imaginary components:
 
 $$
-X =
-\left[
-\Re\{Z\};
-\Im\{Z\}
-\right].
+X = \left[ \Re\{Z\}; \Im\{Z\} \right].
 $$
 
 Thus the CNN input has
@@ -318,12 +295,7 @@ Output
 Each residual block contains two $3\times3$ convolutions with batch normalization and ReLU activation, followed by an identity skip connection:
 
 $$
-\mathbf{x}_{out}
-=
-\operatorname{ReLU}
-\left(
-F(\mathbf{x})+\mathbf{x}
-\right).
+\mathbf{x}_{out} = \operatorname{ReLU} \left( F(\mathbf{x})+\mathbf{x} \right).
 $$
 
 The network does not use fully connected layers. Consequently, the spatial DD dimensions are preserved throughout the network.
@@ -342,11 +314,7 @@ real-valued channels:
 These are recombined to form
 
 $$
-\hat{H}
-=
-\hat{H}_{\mathrm{Re}}
-+
-j\hat{H}_{\mathrm{Im}}.
+\hat{H} = \hat{H}_{\mathrm{Re}} + j\hat{H}_{\mathrm{Im}}.
 $$
 
 The network contains **277,664 trainable parameters**.
@@ -360,34 +328,19 @@ The network is trained with a weighted complex-domain reconstruction loss.
 The target magnitude is first aggregated across transmit antennas:
 
 $$
-|H[m,n]|
-=
-\sqrt{
-\sum_{t=1}^{N_t}
-\left(
-H_{\mathrm{Re}}[m,n,t]^2+
-H_{\mathrm{Im}}[m,n,t]^2
-\right)
-}.
+|H[m,n]| = \sqrt{ \sum_{t=1}^{N_t} \left( H_{\mathrm{Re}}[m,n,t]^2+ H_{\mathrm{Im}}[m,n,t]^2 \right) }.
 $$
 
 A threshold is then calculated for each sample:
 
 $$
-\tau
-=
-\alpha
-\max_{m,n}|H[m,n]|.
+\tau = \alpha \max_{m,n}|H[m,n]|.
 $$
 
 Strong DD locations receive full weight while weak locations receive a reduced weight:
 
 $$
-w[m,n]=
-\begin{cases}
-1, & |H[m,n]|\geq\tau,\\
-\gamma, & |H[m,n]|<\tau.
-\end{cases}
+w[m,n]= \begin{cases} 1, & |H[m,n]|\geq\tau,\\ \gamma, & |H[m,n]|<\tau. \end{cases}
 $$
 
 This focuses the reconstruction loss on significant channel paths.
@@ -401,10 +354,7 @@ Before the reconstruction MSE is calculated, the predicted complex coefficients 
 For a predicted complex coefficient $z$,
 
 $$
-\mathcal{S}_{\tau}(z)
-=
-\max(|z|-\tau,0)
-\frac{z}{|z|+\epsilon}.
+\mathcal{S}_{\tau}(z) = \max(|z|-\tau,0) \frac{z}{|z|+\epsilon}.
 $$
 
 This encourages small predicted coefficients to shrink toward zero while retaining the phase of larger coefficients.
@@ -416,22 +366,13 @@ This encourages small predicted coefficients to shrink toward zero while retaini
 The real and imaginary errors are combined as
 
 $$
-e =
-(\hat{H}_{\mathrm{Re}}-H_{\mathrm{Re}})^2
-+
-(\hat{H}_{\mathrm{Im}}-H_{\mathrm{Im}})^2.
+e = (\hat{H}_{\mathrm{Re}}-H_{\mathrm{Re}})^2 + (\hat{H}_{\mathrm{Im}}-H_{\mathrm{Im}})^2.
 $$
 
 The weighted reconstruction term is approximately
 
 $$
-L_{\mathrm{MSE}}
-=
-\operatorname{mean}
-\left(
-w[m,n]
-\sum_t e[m,n,t]
-\right).
+L_{\mathrm{MSE}} = \operatorname{mean} \left( w[m,n] \sum_t e[m,n,t] \right).
 $$
 
 ---
@@ -441,29 +382,19 @@ $$
 A masked L1 penalty is additionally applied to predicted energy at locations where the target is weak:
 
 $$
-L_1
-=
-\operatorname{mean}
-\left(
-|\hat{H}[m,n]|\,\mathbf{1}_{|H[m,n]|<\tau}
-\right).
+L_1 = \operatorname{mean} \left( |\hat{H}[m,n]|\,\mathbf{1}_{|H[m,n]|<\tau} \right).
 $$
 
 The total training objective is
 
 $$
-L =
-L_{\mathrm{MSE}}
-+
-\lambda L_1
+L = L_{\mathrm{MSE}} + \lambda L_1
 $$
 
 with the implemented training configuration using:
 
 $$
-\alpha=0.05,\qquad
-\gamma=0.05,\qquad
-\lambda=10^{-2},
+\alpha=0.05,\qquad \gamma=0.05,\qquad \lambda=10^{-2},
 $$
 
 and a soft-threshold ratio of 0.01.
@@ -500,21 +431,13 @@ $$
 Performance is measured using normalized mean squared error:
 
 $$
-\mathrm{NMSE}
-=
-\frac{
-\|\hat{H}-H\|_2^2
-}{
-\|H\|_2^2
-}.
+\mathrm{NMSE} = \frac{ \|\hat{H}-H\|_2^2 }{ \|H\|_2^2 }.
 $$
 
 The value is reported in decibels:
 
 $$
-\mathrm{NMSE}_{dB}
-=
-10\log_{10}(\mathrm{NMSE}).
+\mathrm{NMSE}_{dB} = 10\log_{10}(\mathrm{NMSE}).
 $$
 
 The project also evaluates a per-antenna hard-thresholding operation. Predicted coefficients below a fraction of the maximum predicted magnitude are set to zero, allowing the estimator to produce a sparse channel representation.
@@ -612,18 +535,7 @@ The repository currently uses the **256 × 8 DD-grid, 16-transmit-antenna, 40,00
 At a high level, the entire estimator can be viewed as learning
 
 $$
-\hat{H}
-=
-f_{\theta}
-\left(
-\operatorname{Scatter}
-\left(
-\Phi^H
-\left(
-\Phi h+w
-\right)
-\right)
-\right),
+\hat{H} = f_{\theta} \left( \operatorname{Scatter} \left( \Phi^H \left( \Phi h+w \right) \right) \right),
 $$
 
 where:

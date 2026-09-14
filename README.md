@@ -1,7 +1,5 @@
 # Lightweight CNN-Based Channel Estimation for MIMO-OTFS
 
-A cleaned, reproducible implementation of the lightweight residual CNN used for MIMO-OTFS channel estimation in the delay-Doppler domain.
-
 
 ## Experiment configuration
 
